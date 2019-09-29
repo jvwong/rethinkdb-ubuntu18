@@ -28,12 +28,12 @@ RUN pip install rethinkdb==2.3.0
 
 # Create directories
 RUN mkdir -p /data
-RUN mkdir -p /home/rethinkdb/backups
+RUN mkdir -p /data/backups
 
 # Change ownership of the app to the unprivileged user
 RUN chown rethinkdb:rethinkdb -R /data
-WORKDIR /data
 
+WORKDIR /data
 USER rethinkdb
 
 # process cluster webui
