@@ -8,7 +8,13 @@
 #
 # DESCRIPTION:
 #   Restore data within Rethinkdb Docker container from archive. 
+#   Assume
+#    - host and client port of the node to connect to is 'localhost:28015'
+#    - no password
+#    - overwrite any exists database/table
+#    - Working directory of container is '/data'
 #   Used with Docker version 18.09.6
+#
 #   -c container (required)
 #     The container name 
 #   -i import 
