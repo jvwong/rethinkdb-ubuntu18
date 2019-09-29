@@ -4,7 +4,7 @@
 #   restore_rethinkdb
 #
 # SYNOPSIS:
-#   restore_rethinkdb.sh -c container -i import -f file
+#   restore_rethinkdb.sh -c container -f file -i import 
 #
 # DESCRIPTION:
 #   Restore data within Rethinkdb Docker container from archive. 
@@ -17,10 +17,10 @@
 #
 #   -c container (required)
 #     The container name 
-#   -i import 
-#     Limit the dump to the given database and/or table; Use dot notation e.g. 'test.authors'
-#   -f file 
+#   -f file (required)
 #     Input archive path on host
+#   -i import (optional)
+#     Limit the restore to the given database and/or table; Use dot notation e.g. 'test.authors'
 
 ################################# VARS #################################
 RETHINKDB_DATA_DIRECTORY='/data'
@@ -39,14 +39,6 @@ do
         fi
         ;;
 
-    i)  ival=1
-        DB_TABLE="$OPTARG"
-        if [ ! "$ival" ]; then
-          printf 'Option -i "%s" is required\n' "$oval"
-          exit 2
-        fi
-        ;;
-        
     f)  fval=1
         ARCHIVE_INPUT_PATH="$OPTARG"
         if [ ! -f "${ARCHIVE_INPUT_PATH}" ]; then
@@ -56,7 +48,11 @@ do
         CONTAINER_ARCHIVE_PATH=${RETHINKDB_DATA_DIRECTORY}/$(basename ${ARCHIVE_INPUT_PATH})
         ;;
 
-    ?)  printf "Usage: %s -c container -i import -f file\n" $0 >&2
+    i)  ival=1
+        DB_TABLE="$OPTARG"
+        ;;
+        
+    ?)  printf "Usage: %s -c container -f file -i import\n" $0 >&2
         exit 2
         ;; 
 
@@ -66,11 +62,13 @@ done
 
 ################################ RESTORE #################################
 # Restore from gzip archive 
-if [ "$cval" -a "$ival" -a "$fval" ]; then
+if [ "$cval" -a "$fval" ]; then
+  RESTORE_CMD="rethinkdb restore ${CONTAINER_ARCHIVE_PATH} --force"
+  if [ "$ival" ]; then RESTORE_CMD+=" -i ${DB_TABLE}"; fi
   docker cp ${ARCHIVE_INPUT_PATH} ${CONTAINER_NAME}:${RETHINKDB_DATA_DIRECTORY}
-  docker exec -it ${CONTAINER_NAME} /bin/bash -c "rethinkdb restore ${CONTAINER_ARCHIVE_PATH} -i ${DB_TABLE} --force"
+  docker exec -it ${CONTAINER_NAME} /bin/bash -c "${RESTORE_CMD}"
   docker exec -it ${CONTAINER_NAME} /bin/bash -c "rm -rf ${CONTAINER_ARCHIVE_PATH}"
 else 
-  printf "Usage: %s -c container -i import -f file\n" $0 >&2
+  printf "Usage: %s -c container -f file -i import\n" $0 >&2
   exit 2
 fi
