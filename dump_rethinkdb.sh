@@ -22,6 +22,7 @@
 TIMESTAMP=`date "+%Y%m%d_%H%M%S"`
 ARCHIVE_OUTPUT_DIRECTORY=$(pwd)
 RETHINKDB_DATA_DIRECTORY='/data'
+DUMP_ARCHIVE_NAME=rethinkdb_dump_${TIMESTAMP}.tar.gz
 ################################# OPTS #################################
 cval=
 eval=
@@ -69,9 +70,6 @@ done
 ################################ BACKUP #################################
 # Create gzip archives from data in volumes 
 if [ "$cval" -a "$eval" ]; then
-  if [ ! "${DUMP_ARCHIVE_NAME}" ]; then
-    DUMP_ARCHIVE_NAME=${CONTAINER_NAME}_dump_${TIMESTAMP}.tar.gz
-  fi
   docker exec -it ${CONTAINER_NAME} /bin/bash -c "rethinkdb dump -e ${DB_TABLE} -f ${DUMP_ARCHIVE_NAME}"
   docker cp ${CONTAINER_NAME}:${RETHINKDB_DATA_DIRECTORY}/${DUMP_ARCHIVE_NAME} ${ARCHIVE_OUTPUT_DIRECTORY}
   docker exec -it ${CONTAINER_NAME} /bin/bash -c "rm ${RETHINKDB_DATA_DIRECTORY}/${DUMP_ARCHIVE_NAME}"  
