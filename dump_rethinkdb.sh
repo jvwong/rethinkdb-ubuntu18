@@ -7,7 +7,7 @@
 #   dump_rethinkdb.sh -n name -e export -f file 
 #
 # DESCRIPTION:
-#   Dump data within Rethinkdb Docker container to archive. 
+#   Dump data within Rethinkdb Docker container to archive. Assume that dump happens in /data.
 #   Used with Docker version 18.09.6
 #   -n name (required)
 #     The name of the container
@@ -19,9 +19,7 @@
 ################################# VARS #################################
 TIMESTAMP=`date "+%Y%m%d_%H%M%S"`
 ARCHIVE_OUTPUT_DIRECTORY=$(pwd)
-RETHINKDB_BACKUPS_DIRECTORY='/data/backups'
-RETHINKDB_DUMP_VOLUME_NAME='rethinkdb_dump'
-
+RETHINKDB_DATA_DIRECTORY='/data'
 ################################# OPTS #################################
 nflag=
 eflag=
@@ -62,8 +60,8 @@ done
 # Create gzip archives from data in volumes 
 if [ "$nflag" -a "$eflag" ]; then
   docker exec -it ${CONTAINER_NAME} /bin/bash -c "rethinkdb dump -e ${DB_TABLE} -f ${DUMP_ARCHIVE_NAME}"
-  docker cp ${CONTAINER_NAME}:/data/${DUMP_ARCHIVE_NAME} ${ARCHIVE_OUTPUT_DIRECTORY}
-  docker exec -it ${CONTAINER_NAME} /bin/bash -c "rm /data/${DUMP_ARCHIVE_NAME}"  
+  docker cp ${CONTAINER_NAME}:${RETHINKDB_DATA_DIRECTORY}/${DUMP_ARCHIVE_NAME} ${ARCHIVE_OUTPUT_DIRECTORY}
+  docker exec -it ${CONTAINER_NAME} /bin/bash -c "rm ${RETHINKDB_DATA_DIRECTORY}/${DUMP_ARCHIVE_NAME}"  
 else 
   printf "Usage: %s -n name -e export [-f file]\n" $0 >&2
   exit 2
