@@ -1,5 +1,9 @@
 FROM ubuntu:18.04
 
+# Create an unprivileged user
+RUN groupadd rethinkdb \
+  && useradd -g rethinkdb rethinkdb --shell /bin/bash -m -d /home/rethinkdb
+
 # Install.
 RUN \
   sed -i 's/# \(.*multiverse$\)/\1/g' /etc/apt/sources.list && \
@@ -22,9 +26,17 @@ RUN cp /etc/rethinkdb/default.conf.sample /etc/rethinkdb/instances.d/instance1.c
 # Install python driver for rethinkdb
 RUN pip install rethinkdb==2.3.0
 
+# Create directories
+RUN mkdir -p /data
+RUN mkdir -p /home/rethinkdb/backups
+
+# Change ownership of the app to the unprivileged user
+RUN chown rethinkdb:rethinkdb -R /data
 WORKDIR /data
 
-EXPOSE 8080
-EXPOSE 28015
+USER rethinkdb
+
+# process cluster webui
+EXPOSE 28015 29015 8080
 
 CMD ["rethinkdb", "--bind", "all"]
