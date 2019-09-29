@@ -28,7 +28,6 @@ RUN pip install rethinkdb==2.3.0
 
 # Create directories
 RUN mkdir -p /data
-RUN mkdir -p /data/backups
 
 # Change ownership of the app to the unprivileged user
 RUN chown rethinkdb:rethinkdb -R /data
