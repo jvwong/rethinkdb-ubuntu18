@@ -20,13 +20,7 @@ RUN \
 RUN cp /etc/rethinkdb/default.conf.sample /etc/rethinkdb/instances.d/instance1.conf && /etc/init.d/rethinkdb restart
 
 # Install python driver for rethinkdb
-RUN pip install rethinkdb==2.3.0`
-
-# Define mountable directories.
-VOLUME ["/data"]
-
-# Define working directory.
-WORKDIR /data
+RUN pip install rethinkdb==2.3.0
 
 EXPOSE 8080
 EXPOSE 28015
