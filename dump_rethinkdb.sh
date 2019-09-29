@@ -36,7 +36,6 @@ do
           printf 'Option -n "%s" is not a container\n' "${CONTAINER_NAME}"
           exit 2
         fi
-        DUMP_ARCHIVE_NAME=${CONTAINER_NAME}_dump_${TIMESTAMP}.tar.gz
         ;;
 
     e)  eval=1
@@ -70,6 +69,9 @@ done
 ################################ BACKUP #################################
 # Create gzip archives from data in volumes 
 if [ "$cval" -a "$eval" ]; then
+  if [ ! "${DUMP_ARCHIVE_NAME}" ]; then
+    DUMP_ARCHIVE_NAME=${CONTAINER_NAME}_dump_${TIMESTAMP}.tar.gz
+  fi
   docker exec -it ${CONTAINER_NAME} /bin/bash -c "rethinkdb dump -e ${DB_TABLE} -f ${DUMP_ARCHIVE_NAME}"
   docker cp ${CONTAINER_NAME}:${RETHINKDB_DATA_DIRECTORY}/${DUMP_ARCHIVE_NAME} ${ARCHIVE_OUTPUT_DIRECTORY}
   docker exec -it ${CONTAINER_NAME} /bin/bash -c "rm ${RETHINKDB_DATA_DIRECTORY}/${DUMP_ARCHIVE_NAME}"  
