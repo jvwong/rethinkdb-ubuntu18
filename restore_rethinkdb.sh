@@ -18,7 +18,7 @@
 #   -c container (required)
 #     The container name 
 #   -f file (required)
-#     Input archive path on host
+#     Input archive file path on host
 #   -i import (optional)
 #     Limit the restore to the given database and/or table; Use dot notation e.g. 'test.authors'
 
