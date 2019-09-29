@@ -68,7 +68,6 @@ done
 
 
 ################################ BACKUP #################################
-# Create gzip archives from data in volumes 
 if [ "$cval" -a "$eval" ]; then
   docker exec -it ${CONTAINER_NAME} /bin/bash -c "rethinkdb dump -e ${DB_TABLE} -f ${DUMP_ARCHIVE_NAME}"
   docker cp ${CONTAINER_NAME}:${RETHINKDB_DATA_DIRECTORY}/${DUMP_ARCHIVE_NAME} ${ARCHIVE_OUTPUT_DIRECTORY}
