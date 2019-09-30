@@ -21,8 +21,6 @@ RUN \
   apt-get install -y rethinkdb python-pip && \
   rm -rf /var/lib/apt/lists/*
 
-RUN cp /etc/rethinkdb/default.conf.sample /etc/rethinkdb/instances.d/instance1.conf && /etc/init.d/rethinkdb restart
-
 # Install python driver for rethinkdb
 RUN pip install rethinkdb==2.3.0
 
