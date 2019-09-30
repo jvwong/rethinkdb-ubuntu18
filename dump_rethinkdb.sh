@@ -34,7 +34,7 @@ cval=
 eval=
 nval=
 dval=
-while getopts 'c:e:n:f:' OPTION
+while getopts 'c:e:n:d:' OPTION
 do
   case $OPTION in
     c)  cval=1
