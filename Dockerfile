@@ -45,5 +45,6 @@ USER rethinkdb
 
 # process cluster webui
 EXPOSE 28015 29015 8080
+EXPOSE 3000
 
 CMD ["rethinkdb", "--bind", "all"]

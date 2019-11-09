@@ -8,11 +8,11 @@ import cron from 'node-cron';
 
 import RoutesApi from './routes/api';
 import * as config from '../config';
-import backupCron from './backup';
+// import backupCron from './backup';
 
-cron.schedule( config.RETHINKDB_DUMP_CRON_SCHEDULE, () => {
-  backupCron();
-});
+// cron.schedule( config.RETHINKDB_DUMP_CRON_SCHEDULE, () => {
+  // backupCron();
+// });
 
 let app = express();
 let server = http.createServer(app);

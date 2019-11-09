@@ -19,11 +19,11 @@ const env = ( key, defaultVal ) => {
 
 export const PORT = env('PORT', 3000);
 export const LOG_LEVEL = env('LOG_LEVEL', 'info');
-export const RETHINKDB_DUMP_CRON_SCHEDULE = env('RETHINKDB_DUMP_CRON_SCHEDULE', '30 * * * * *');
+export const RETHINKDB_DUMP_CRON_SCHEDULE = env('RETHINKDB_DUMP_CRON_SCHEDULE', '10 * * * * *');
 
 // Data directories
-export const DATA_DIRECTORY = env('DATA_DIRECTORY', 'data');
-export const FACTOID_DATA_DIRECTORY = env('FACTOID_DATA_DIRECTORY', 'factoid');
+export const BACKUPS_DIRECTORY = env('DATA_DIRECTORY', './backups');
+export const DATABASE_NAME = env('DATABASE_NAME', 'factoid');
 
 // Storage providers
 export const DROPBOX_ACCESS_TOKEN = env('DROPBOX_ACCESS_TOKEN', '');
