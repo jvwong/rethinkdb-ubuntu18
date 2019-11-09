@@ -4,10 +4,15 @@ import logger from './logger';
 import bodyParser from 'body-parser';
 import http from 'http';
 import stream from 'stream';
+import cron from 'node-cron';
 
 import RoutesApi from './routes/api';
-// import RoutesIndex from './routes/index';
 import * as config from '../config';
+import backupCron from './backup';
+
+cron.schedule( config.RETHINKDB_DUMP_CRON_SCHEDULE, () => {
+  backupCron();
+});
 
 let app = express();
 let server = http.createServer(app);

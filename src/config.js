@@ -19,6 +19,7 @@ const env = ( key, defaultVal ) => {
 
 export const PORT = env('PORT', 3000);
 export const LOG_LEVEL = env('LOG_LEVEL', 'info');
+export const RETHINKDB_DUMP_CRON_SCHEDULE = env('RETHINKDB_DUMP_CRON_SCHEDULE', '30 * * * * *');
 
 // Data directories
 export const DATA_DIRECTORY = env('DATA_DIRECTORY', 'data');
