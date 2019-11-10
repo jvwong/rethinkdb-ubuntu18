@@ -5,12 +5,15 @@ import backup from '../../backup';
 
 let http = Express.Router();
 
-http.post('/', function( req, res, next ){
+http.post('/', function( req, res, next ) {
   const { opts } = _.assign( {}, req.body );
   res.set({
     'Content-Type': 'text/plain'
   });
-  backup( opts ).pipe( res );
+
+  backup( opts )
+    .then( msg => res.send( msg ) )
+    .catch( next );
 });
 
 export default http;

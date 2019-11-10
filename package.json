@@ -13,12 +13,15 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "bluebird": "^3.7.1",
     "body-parser": "^1.19.0",
+    "dropbox": "^4.0.30",
     "esm": "^3.2.25",
     "express": "^4.17.1",
     "lodash": "^4.17.15",
     "morgan": "^1.9.1",
     "node-cron": "^2.0.3",
+    "node-fetch": "^2.6.0",
     "rethinkdb": "^2.3.3",
     "winston": "^2.3.1"
   },

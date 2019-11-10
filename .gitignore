@@ -1,3 +1,4 @@
 node_modules/
 backups/*
-debug.log
+*.log
+.DS_Store

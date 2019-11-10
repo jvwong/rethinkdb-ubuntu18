@@ -27,3 +27,4 @@ export const DATABASE_NAME = env('DATABASE_NAME', 'factoid');
 
 // Storage providers
 export const DROPBOX_ACCESS_TOKEN = env('DROPBOX_ACCESS_TOKEN', '');
+export const DROPBOX_UPLOAD_THRESHOLD = env('DROPBOX_UPLOAD_THRESHOLD', 150 * 1024 * 1024 );

@@ -4,15 +4,7 @@ import { spawn } from 'child_process';
 
 import logger from '../logger';
 import { DATABASE_NAME, BACKUPS_DIRECTORY } from '../../config';
-
-const handleExit = ( code, signal, opts ) => {
-  if( code || signal ) return;  
-  logger.info( `RethinkDB dump process exited OK` );
-};
-
-const handleError = error => {
-  logger.error( `Subprocess error: ${error}` );
-};
+import provider from './dropbox';
 
 const getDateTime = () => new Date().toISOString().replace(/:|\./g, "-");
 
@@ -33,14 +25,44 @@ const backup = opts => {
   const spawnArgs = _.flattenDeep( [ 'dump' ].concat( _.toPairs( opts ) ) );
   const spawnOpts = { cwd: path.resolve( BACKUPS_DIRECTORY ) };
 
-  const subprocess = spawn( CMD, spawnArgs , spawnOpts );
-  subprocess.on( 'exit', ( code, signal ) => handleExit( code, signal, opts ) );
-  subprocess.on( 'error', handleError );
-  subprocess.stderr.on( 'data', data => {
-    logger.error( data.toString() );
-  });
+  const dbDump = spawn( CMD, spawnArgs , spawnOpts );
 
-  return subprocess.stderr;
+  return new Promise( ( resolve, reject ) => {
+
+    dbDump.on( 'exit', ( code, signal ) => {
+      const message = `Exited with ${code} and signal ${signal}`;
+      logger.info( message );
+
+      if( code || signal ){
+        reject( message );
+
+      } else {
+
+        const { cwd: dumpDirectory } = spawnOpts;
+        const { '-f': dumpFile } = opts;
+        // const dumpPath = path.resolve( dumpDirectory, dumpFile );
+        provider.upload( dumpDirectory, dumpFile )
+          .then( () => resolve( message ) )
+          .catch( error => reject( error ) );
+      }
+    });
+    
+    dbDump.on( 'error', error => {
+      logger.error( `Subprocess error: ${error}` );
+      reject( error );
+    });
+
+    // Log any and all messages 
+    dbDump.stdout.on( 'data', data => {
+      logger.info( `${data}` );
+    });
+
+    dbDump.stderr.on( 'data', data => {
+      logger.error( `${data}` );
+      reject( data );
+    });
+
+  });
 };
 
 export default backup;
