@@ -1,5 +1,4 @@
 import fs from 'fs';
-import _ from 'lodash';
 import path from 'path';
 import Promise from 'bluebird';
 import { Dropbox } from 'dropbox';
@@ -9,7 +8,8 @@ import logger from '../logger';
 import { 
   DROPBOX_ACCESS_TOKEN, 
   FILE_UPLOAD_THRESHOLD,
-  FILE_UPLOAD_MAXBLOB } from '../../config';
+  // FILE_UPLOAD_MAXBLOB 
+} from '../../config';
 
 const readFile = Promise.promisify( fs.readFile );
 const stat = Promise.promisify( fs.stat );
