@@ -4,7 +4,7 @@ import logger from './logger';
 import bodyParser from 'body-parser';
 import http from 'http';
 import stream from 'stream';
-import cron from 'node-cron';
+// import cron from 'node-cron';
 
 import RoutesApi from './routes/api';
 import * as config from '../config';
@@ -43,13 +43,13 @@ server.on( 'error', onError );
 server.on( 'listening', onListening );
 
 function onError(error) {
-  if (error.syscall !== 'listen') {
+  if ( error.syscall !== 'listen') {
     throw error;
   }
 
-  let bind = typeof port === 'string'
-    ? 'Pipe ' + port
-    : 'Port ' + port;
+  let bind = typeof config.PORT === 'string'
+    ? 'Pipe ' + config.PORT
+    : 'Port ' + config.PORT;
 
   // handle specific listen errors with friendly messages
   switch (error.code) {
