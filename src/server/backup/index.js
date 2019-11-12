@@ -40,7 +40,8 @@ const backup = opts => {
 
         const { cwd: dumpDirectory } = spawnOpts;
         const { '-f': dumpFile } = opts;
-        // const dumpPath = path.resolve( dumpDirectory, dumpFile );
+
+        //this should resolve  immediately and let provider run in background.
         provider.upload( dumpDirectory, dumpFile )
           .then( () => resolve( message ) )
           .catch( error => reject( error ) );
@@ -53,9 +54,7 @@ const backup = opts => {
     });
 
     // Log any and all messages 
-    dbDump.stdout.on( 'data', data => {
-      logger.info( `${data}` );
-    });
+    dbDump.stdout.on( 'data', data => logger.info( `${data}` ) );
 
     dbDump.stderr.on( 'data', data => {
       logger.error( `${data}` );
