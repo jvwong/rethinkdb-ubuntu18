@@ -39,7 +39,7 @@ const dropBoxUpload = async ( directory, filename ) => {
 
       fileStream.on( 'data', chunk => {
         logger.info( `Received ${chunk.length} bytes` );
-        if( chunk < )
+        // if( chunk < )
       });
       
       fileStream.on( 'end', () => {
