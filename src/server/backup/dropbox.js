@@ -3,6 +3,7 @@ import path from 'path';
 import Promise from 'bluebird';
 import { Dropbox } from 'dropbox';
 import fetch from 'node-fetch';
+import { Writable } from 'stream';
 
 import logger from '../logger';
 import { 
@@ -14,16 +15,20 @@ import {
 const readFile = Promise.promisify( fs.readFile );
 const stat = Promise.promisify( fs.stat );
 
-const getSubChunks = chunk => {
-  const subChunks = [];
-  let offset = 0;
-  while ( offset < chunk.length ) {
-    var subChunkSize = Math.min( FILE_UPLOAD_MAXBLOB, chunk.length - offset );
-    subChunks.push( chunk.slice( offset, offset + subChunkSize ) );
-    offset += subChunkSize;
-  }
-  return subChunks; 
-};
+let offset = 0;
+let session_id;
+
+
+// const getSubChunks = chunk => {
+//   const subChunks = [];
+//   let offset = 0;
+//   while ( offset < chunk.length ) {
+//     var subChunkSize = Math.min( FILE_UPLOAD_MAXBLOB, chunk.length - offset );
+//     subChunks.push( chunk.slice( offset, offset + subChunkSize ) );
+//     offset += subChunkSize;
+//   }
+//   return subChunks; 
+// };
 
 const dropBoxUpload = async ( directory, filename ) => {
   const uploadPath = '/' + filename;
@@ -39,76 +44,58 @@ const dropBoxUpload = async ( directory, filename ) => {
     
     if ( fsstats.size < FILE_UPLOAD_THRESHOLD ) { 
       // filesUpload API
-      logger.info( `File below FILE_UPLOAD_THRESHOLD` );
+      logger.info( `File below FILE_UPLOAD_THRESHOLD: ${fsstats.size}` );
       const file = await readFile( filePath ); 
       const dbxResponse = await dbx.filesUpload({ path: '/' + filename, contents: file });
       logger.info( dbxResponse );
 
     } else {
       // filesUploadSession* API
-      logger.info( `File above FILE_UPLOAD_THRESHOLD` );
-      let session_id,
-        offset = 0;
+      // It is a requirement that FILE_UPLOAD_THRESHOLD > FILE_UPLOAD_MAXBLOB
+      logger.info( `File above FILE_UPLOAD_THRESHOLD: ${fsstats.size}` );
 
-      const fileStream = await fs.createReadStream( filePath ); 
       
-      fileStream.on( 'ready', () => logger.info( `Stream is ready` ) );
-      fileStream.on( 'end', () => logger.info( `File data read successfully.` ) );      
-      fileStream.on( 'data', async function( chunk ) {
-        const subChunks = getSubChunks( chunk );
-        logger.info( `Got ${chunk.length} bytes` );
-        for( const subChunk of subChunks ){
-          logger.info( `subChunk.length: ${subChunk.length}` );
-          logger.info( `offset: ${offset}` );
-          logger.info( `session_id: ${session_id}` );
-            
+      const fileReadStream = await fs.createReadStream( filePath ); 
 
-          const isFirstSubChunk = offset == 0;
-          const isLastSubChunk = offset + subChunk.length == fsstats.size;
-
+      const dropboxStream = new Writable({
+        async write(chunk, encoding, callback) {
+          const isFirstChunk = offset == 0;
+          const isLastChunk = offset + chunk.length == fsstats.size;
+          
           // Edge case: isFirstSubChunk && isLastSubChunk
-          if ( isFirstSubChunk ) {
-            logger.info( `isFirstSubChunk` );
+          if ( isFirstChunk ) {
             // Starting multipart upload of file
-            session_id = await dbx.filesUploadSessionStart({ close: false, contents: subChunk });
-            offset += subChunk.length;
-            console.log('hey!');
-            logger.info( `offset after incrementing: ${offset}` );
+            const dbxResponse = await dbx.filesUploadSessionStart({ close: false, contents: chunk });
+            session_id = dbxResponse.session_id;
+            offset += chunk.length;
+            logger.info( `Beginning multi part upload session: ${session_id}` );
   
-          } else if( isLastSubChunk ) {
+          } else if( isLastChunk ) {
             logger.info( `isLastSubChunk` );
             // Last chunk of data, close session
             const cursor = { session_id, offset  };
             const commit = { path: uploadPath, mode: 'add', autorename: true, mute: false };
-            await dbx.filesUploadSessionFinish({ cursor: cursor, commit: commit, contents: subChunk });
-            console.log('hoo!');
-            
+            await dbx.filesUploadSessionFinish({ cursor: cursor, commit: commit, contents: chunk });
+            logger.info( `Uploaded last chunk at: ${uploadPath}` );
+
           } else {  
-            logger.info( `is next subChunk` );
             // Append part to the upload session
             const cursor = { session_id, offset };
-            await dbx.filesUploadSessionAppendV2({ cursor, close: false, contents: blob });
-            offset += subChunk.length;
-            console.log('hee!');
-            logger.info( `offset after incrementing: ${offset}` );
+            await dbx.filesUploadSessionAppendV2({ cursor, close: false, contents: chunk });
+            offset += chunk.length;
+            logger.info( `Uploaded ${offset}/${fsstats.size}` );
           } 
+          callback();
         }
-       // logger.info( `Uploaded ${offset} bytes of ${fsstats.size}` );
       });
+      dropboxStream.on( 'close', () => { logger.info(`close`); });
+      // dropboxStream.on( 'drain', () => { logger.info(`drain`); });
+      dropboxStream.on( 'finish', () => { logger.info(`finish`); });
+      dropboxStream.on( 'error', error => { logger.error(`error: ${error}`); });
+      fileReadStream.pipe( dropboxStream ); 
 
-      
-      return new Promise( ( resolve, reject ) => {
-        fileStream.on( 'error', error => {
-          logger.info( `Error reading data from file: ${error}` );
-          reject( error );
-        });
-
-        fileStream.on( 'close', () => {
-          logger.info( `Data file closed successfully.` );
-          resolve( fileStream.path );
-        });
-      });
-      
+      return 'done';
+  
     }
   
   } catch (e) {
