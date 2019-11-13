@@ -14,22 +14,7 @@ import {
 const readFile = Promise.promisify( fs.readFile );
 const stat = Promise.promisify( fs.stat );
 
-let offset = 0;
-let session_id;
-
-
-// const getSubChunks = chunk => {
-//   const subChunks = [];
-//   let offset = 0;
-//   while ( offset < chunk.length ) {
-//     var subChunkSize = Math.min( FILE_UPLOAD_MAXBLOB, chunk.length - offset );
-//     subChunks.push( chunk.slice( offset, offset + subChunkSize ) );
-//     offset += subChunkSize;
-//   }
-//   return subChunks; 
-// };
-
-const dropBoxUpload = async ( directory, filename ) => {
+const upload2DropBox = async ( directory, filename ) => {
   const path = '/' + filename;
   const filePath = nodepath.resolve( directory, filename );
   const dbxOpts = {
@@ -54,9 +39,9 @@ const dropBoxUpload = async ( directory, filename ) => {
       logger.info( `File above FILE_UPLOAD_THRESHOLD: ${fsstats.size}` );
       const fileReadStream = await fs.createReadStream( filePath );
       const dropboxStream = streamingSession( path, fsstats, dbx );
-      dropboxStream.on( 'close', () => { logger.info(`close`); });
+      // dropboxStream.on( 'close', () => { logger.info(`close`); });
       // dropboxStream.on( 'finish', () => { logger.info(`finish`); });
-      // dropboxStream.on( 'error', error => { logger.error(`error: ${error}`); });
+      dropboxStream.on( 'error', error => { throw error; });
       fileReadStream.pipe( dropboxStream ); 
       return 'done';
     }
@@ -67,7 +52,7 @@ const dropBoxUpload = async ( directory, filename ) => {
   }
 };
 
-const upload = ( directory, filename ) => dropBoxUpload ( directory, filename );
+const upload = ( directory, filename ) => upload2DropBox ( directory, filename );
 
 const dropbox = {
   upload
