@@ -40,7 +40,7 @@ const backup = opts => {
 
         const { cwd: dumpDirectory } = spawnOpts;
         // const { '-f': dumpFile } = opts;
-        const dumpFile = 'PathwayCommons12.intact.hgnc.txt.gz';
+        const dumpFile = 'PathwayCommons12.All.uniprot.gmt.gz';
 
         //this should resolve  immediately and let provider run in background.
         provider.upload( dumpDirectory, dumpFile )

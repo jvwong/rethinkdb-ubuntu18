@@ -1,15 +1,14 @@
 import fs, { fstat } from 'fs';
-import path from 'path';
+import nodepath from 'path';
 import Promise from 'bluebird';
 import { Dropbox } from 'dropbox';
 import fetch from 'node-fetch';
-import { Writable } from 'stream';
+import streamingSession from './streamingSession';
 
 import logger from '../logger';
 import { 
   DROPBOX_ACCESS_TOKEN, 
-  FILE_UPLOAD_THRESHOLD,
-  FILE_UPLOAD_MAXBLOB 
+  FILE_UPLOAD_THRESHOLD
 } from '../../config';
 
 const readFile = Promise.promisify( fs.readFile );
@@ -31,8 +30,8 @@ let session_id;
 // };
 
 const dropBoxUpload = async ( directory, filename ) => {
-  const uploadPath = '/' + filename;
-  const filePath = path.resolve( directory, filename );
+  const path = '/' + filename;
+  const filePath = nodepath.resolve( directory, filename );
   const dbxOpts = {
     fetch, 
     accessToken: DROPBOX_ACCESS_TOKEN 
@@ -46,56 +45,20 @@ const dropBoxUpload = async ( directory, filename ) => {
       // filesUpload API
       logger.info( `File below FILE_UPLOAD_THRESHOLD: ${fsstats.size}` );
       const file = await readFile( filePath ); 
-      const dbxResponse = await dbx.filesUpload({ path: '/' + filename, contents: file });
+      const dbxResponse = await dbx.filesUpload({ path, contents: file });
       logger.info( dbxResponse );
 
     } else {
       // filesUploadSession* API
       // It is a requirement that FILE_UPLOAD_THRESHOLD > FILE_UPLOAD_MAXBLOB
       logger.info( `File above FILE_UPLOAD_THRESHOLD: ${fsstats.size}` );
-
-      
-      const fileReadStream = await fs.createReadStream( filePath ); 
-
-      const dropboxStream = new Writable({
-        async write(chunk, encoding, callback) {
-          const isFirstChunk = offset == 0;
-          const isLastChunk = offset + chunk.length == fsstats.size;
-          
-          // Edge case: isFirstSubChunk && isLastSubChunk
-          if ( isFirstChunk ) {
-            // Starting multipart upload of file
-            const dbxResponse = await dbx.filesUploadSessionStart({ close: false, contents: chunk });
-            session_id = dbxResponse.session_id;
-            offset += chunk.length;
-            logger.info( `Beginning multi part upload session: ${session_id}` );
-  
-          } else if( isLastChunk ) {
-            logger.info( `isLastSubChunk` );
-            // Last chunk of data, close session
-            const cursor = { session_id, offset  };
-            const commit = { path: uploadPath, mode: 'add', autorename: true, mute: false };
-            await dbx.filesUploadSessionFinish({ cursor: cursor, commit: commit, contents: chunk });
-            logger.info( `Uploaded last chunk at: ${uploadPath}` );
-
-          } else {  
-            // Append part to the upload session
-            const cursor = { session_id, offset };
-            await dbx.filesUploadSessionAppendV2({ cursor, close: false, contents: chunk });
-            offset += chunk.length;
-            logger.info( `Uploaded ${offset}/${fsstats.size}` );
-          } 
-          callback();
-        }
-      });
+      const fileReadStream = await fs.createReadStream( filePath );
+      const dropboxStream = streamingSession( path, fsstats, dbx );
       dropboxStream.on( 'close', () => { logger.info(`close`); });
-      // dropboxStream.on( 'drain', () => { logger.info(`drain`); });
-      dropboxStream.on( 'finish', () => { logger.info(`finish`); });
-      dropboxStream.on( 'error', error => { logger.error(`error: ${error}`); });
+      // dropboxStream.on( 'finish', () => { logger.info(`finish`); });
+      // dropboxStream.on( 'error', error => { logger.error(`error: ${error}`); });
       fileReadStream.pipe( dropboxStream ); 
-
       return 'done';
-  
     }
   
   } catch (e) {
