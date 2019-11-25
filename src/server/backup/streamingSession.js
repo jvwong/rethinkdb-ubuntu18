@@ -1,4 +1,3 @@
-import { Buffer } from 'Buffer';
 import { Writable } from 'stream';
 
 import logger from '../logger';
