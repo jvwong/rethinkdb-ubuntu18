@@ -18,8 +18,11 @@ const backup = opts => {
 
   const CMD = 'rethinkdb';
   const dumpOpts = {
+    '-c': 'localhost:28015',
+    '-f': `${DATABASE_NAME}_dump_${getDateTime()}.tar.gz`,
     '-e': DATABASE_NAME,
-    '-f': `${DATABASE_NAME}_dump_${getDateTime()}.tar.gz`
+    '--clients': 3,
+    '--temp-dir': path.resolve( BACKUPS_DIRECTORY )
   };
   opts = _.defaultsDeep( {}, opts, dumpOpts );
   const spawnArgs = _.flattenDeep( [ 'dump' ].concat( _.toPairs( opts ) ) );
@@ -29,40 +32,30 @@ const backup = opts => {
 
   return new Promise( ( resolve, reject ) => {
 
-    dbDump.on( 'exit', ( code, signal ) => {
-      const message = `Exited with ${code} and signal ${signal}`;
-      logger.info( message );
-
-      if( code || signal ){
+    dbDump.on( 'exit', code => {
+      const message = `Exited with code ${code}`;
+      
+      if( code ){
+        logger.error( message );
         reject( message );
 
       } else {
-
+        logger.info( message );
         const { cwd: dumpDirectory } = spawnOpts;
-        // const { '-f': dumpFile } = opts;
-        // const dumpFile = 'PathwayCommons12.bind.hgnc.txt.gz'; //1.4MB
-        // const dumpFile = 'PathwayCommons12.biogrid.hgnc.txt.gz'; //16MB
-        const dumpFile = 'svg.zip';
-
-        //this should resolve  immediately and let provider run in background.
+        const { '-f': dumpFile } = opts;
+        
+        // should return immediately
         provider.upload( dumpDirectory, dumpFile )
           .then( () => resolve( message ) )
           .catch( error => reject( error ) );
       }
     });
     
-    dbDump.on( 'error', error => {
-      logger.error( `Subprocess error: ${error}` );
-      reject( error );
-    });
+    dbDump.on( 'error', error => reject( error ) );
 
     // Log any and all messages 
     dbDump.stdout.on( 'data', data => logger.info( `${data}` ) );
-
-    dbDump.stderr.on( 'data', data => {
-      logger.error( `${data}` );
-      reject( data );
-    });
+    dbDump.stderr.on( 'data', data => logger.error( `${data}` ) );
 
   });
 };

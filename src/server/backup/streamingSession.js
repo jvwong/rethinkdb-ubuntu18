@@ -6,17 +6,6 @@ import {
   FILE_UPLOAD_MAXBLOB 
 } from '../../config';
 
-// const getSubChunks = chunk => {
-//   const subChunks = [];
-//   let offset = 0;
-//   while ( offset < chunk.length ) {
-//     var subChunkSize = Math.min( FILE_UPLOAD_MAXBLOB, chunk.length - offset );
-//     subChunks.push( chunk.slice( offset, offset + subChunkSize ) );
-//     offset += subChunkSize;
-//   }
-//   return subChunks; 
-// };
-
 const finishSession = async ( dbx, path, session_id, offset, contents ) => {
   const cursor = { session_id, offset  };
   const commit = { path, mode: 'add', autorename: true, mute: false };
@@ -25,7 +14,6 @@ const finishSession = async ( dbx, path, session_id, offset, contents ) => {
 };
 
 const streamingSession = ( path, fsstats, dbx ) => {
-  
   let 
     session_id, 
     offset = 0,
@@ -34,12 +22,11 @@ const streamingSession = ( path, fsstats, dbx ) => {
     chunkSetLength = 0;
   const close = false;
 
-  //Edge case: What if chunk.length > FILE_UPLOAD_MAXBLOB? Needs to be greater than readable.highwatermark .
   const dbxOutStream = new Writable({
     async write( chunk, encoding, callback ) {
-      const isFirstChunkSet = offset == 0;
-      const isLastChunk = bytesRead + chunk.length == fsstats.size;
       bytesRead += chunk.length;
+      const isFirstChunkSet = offset == 0;
+      const isLastChunk = bytesRead == fsstats.size;
       
       if( !isLastChunk && chunkSetLength + chunk.length <= FILE_UPLOAD_MAXBLOB ) {
         // The chunkSet isn't ready to upload yet
@@ -92,7 +79,13 @@ const streamingSession = ( path, fsstats, dbx ) => {
       }
     }
   });
-  return dbxOutStream;
+
+  if( FILE_UPLOAD_MAXBLOB < dbxOutStream.writableHighWaterMark ){
+    // Edge case: Allowing chunks that could exceed FILE_UPLOAD_MAXBLOB
+    throw new Error( 'FILE_UPLOAD_MAXBLOB cannot be lower than streamingSessio\'s writableHighWaterMark' );
+  } else {
+    return dbxOutStream;
+  }
 };
 
 export default streamingSession;
