@@ -15,7 +15,7 @@ const getDateTime = () => new Date().toISOString().replace(/:|\./g, "-");
  * @param {String} opts.export The 'database.table'
  */
 const backup = opts => {
-
+  
   const CMD = 'rethinkdb';
   const dumpOpts = {
     '-c': 'localhost:28015',
@@ -43,9 +43,10 @@ const backup = opts => {
         logger.info( message );
         const { cwd: dumpDirectory } = spawnOpts;
         const { '-f': dumpFile } = opts;
+        const path = '/' + dumpFile;
         
         // should return immediately
-        provider.upload( dumpDirectory, dumpFile )
+        provider.upload( dumpDirectory, dumpFile, path )
           .then( () => resolve( message ) )
           .catch( error => reject( error ) );
       }

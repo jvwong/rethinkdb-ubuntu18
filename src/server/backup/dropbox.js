@@ -14,8 +14,7 @@ import {
 const readFile = Promise.promisify( fs.readFile );
 const stat = Promise.promisify( fs.stat );
 
-const upload2DropBox = async ( directory, filename ) => {
-  const path = '/' + filename;
+const upload2DropBox = async ( directory, filename, path ) => {
   const filePath = nodepath.resolve( directory, filename );
   const dbxOpts = {
     fetch, 
