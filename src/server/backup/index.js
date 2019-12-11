@@ -10,12 +10,14 @@ const getDateTime = () => new Date().toISOString().replace(/:|\./g, "-");
 
 /**
  * backup
- * 
+ *
+ * Dump the rethinkdb database and upload to third-party provider
+ *
  * @param {Object} opts See {@link https://rethinkdb.com/docs/backup/}
  * @param {String} opts.export The 'database.table'
  */
 const backup = opts => {
-  
+
   const CMD = 'rethinkdb';
   const dumpOpts = {
     '-c': 'localhost:28015',
@@ -24,8 +26,9 @@ const backup = opts => {
     '--clients': 3,
     '--temp-dir': path.resolve( BACKUPS_DIRECTORY )
   };
-  opts = _.defaultsDeep( {}, opts, dumpOpts );
-  const spawnArgs = _.flattenDeep( [ 'dump' ].concat( _.toPairs( opts ) ) );
+  opts = _.pick( opts, _.keys( dumpOpts ) );
+  const argOpts = _.defaults( {}, opts, dumpOpts );
+  const spawnArgs = _.flattenDeep( [ 'dump' ].concat( _.toPairs( argOpts ) ) );
   const spawnOpts = { cwd: path.resolve( BACKUPS_DIRECTORY ) };
 
   const dbDump = spawn( CMD, spawnArgs , spawnOpts );
@@ -34,7 +37,7 @@ const backup = opts => {
 
     dbDump.on( 'exit', code => {
       const message = `Exited with code ${code}`;
-      
+
       if( code ){
         logger.error( message );
         reject( message );
@@ -42,19 +45,19 @@ const backup = opts => {
       } else {
         logger.info( message );
         const { cwd: dumpDirectory } = spawnOpts;
-        const { '-f': dumpFile } = opts;
+        const { '-f': dumpFile } = argOpts;
         const path = '/' + dumpFile;
-        
+
         // should return immediately
         provider.upload( dumpDirectory, dumpFile, path )
           .then( () => resolve( message ) )
           .catch( error => reject( error ) );
       }
     });
-    
+
     dbDump.on( 'error', error => reject( error ) );
 
-    // Log any and all messages 
+    // Log any and all messages
     dbDump.stdout.on( 'data', data => logger.info( `${data}` ) );
     dbDump.stderr.on( 'data', data => logger.error( `${data}` ) );
 

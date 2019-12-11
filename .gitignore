@@ -1,4 +1,4 @@
 node_modules/
-backups/*
+backups/*.tar.gz
 *.log
 .DS_Store
